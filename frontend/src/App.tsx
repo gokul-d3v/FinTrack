@@ -4,6 +4,7 @@ import SignupPage from "./components/signup-page"
 import ForgotPasswordPage from "./components/forgot-password-page"
 import DashboardPage from "./components/dashboard-page"
 import TransactionsPage from "./components/transactions-page"
+import BudgetPlannerPage from "./components/budget-planner-page"
 import { Toaster } from "@/components/ui/sonner"
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/transactions" element={<TransactionsPage />} />
+        <Route path="/budget" element={<BudgetPlannerPage />} />
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
       </Routes>
       <Toaster />

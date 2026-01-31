@@ -24,7 +24,12 @@ func SetupRoutes(r *gin.Engine) {
 
 		// Dashboard & Transactions
 		api.GET("/dashboard", handlers.GetDashboardData)
+		api.GET("/transactions", handlers.GetTransactions)
 		api.POST("/transactions", handlers.CreateTransaction)
 		api.GET("/seed", handlers.SeedData)
+
+		// Budget
+		api.GET("/budget", handlers.GetBudgetOverview)
+		api.POST("/budget/category", handlers.CreateBudgetCategory)
 	}
 }

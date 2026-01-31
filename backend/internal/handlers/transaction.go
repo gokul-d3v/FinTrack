@@ -123,6 +123,31 @@ func CreateTransaction(c *gin.Context) {
 	c.JSON(http.StatusCreated, transaction)
 }
 
+// GetTransactions fetches all transactions
+func GetTransactions(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	collection := db.Client.Database("fintrack").Collection("transactions")
+
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{Key: "date", Value: -1}})
+
+	cursor, err := collection.Find(ctx, bson.M{}, findOptions)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transactions"})
+		return
+	}
+
+	var transactions []models.Transaction
+	if err = cursor.All(ctx, &transactions); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to parse transactions"})
+		return
+	}
+
+	c.JSON(http.StatusOK, transactions)
+}
+
 // SeedData inserts some dummy data for testing
 func SeedData(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

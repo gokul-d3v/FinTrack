@@ -7,14 +7,24 @@ import {
     Plus,
     TrendingUp,
     TrendingDown,
-    PiggyBank,
-    Search,
     Bell,
+    ArrowDownLeft,
+    Home,
+    History,
+    User,
     ChevronDown,
     MoreHorizontal,
-    Loader2
+    Loader2,
+    PiggyBank,
+    ArrowUpRight
 } from "lucide-react"
 import { useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import {
+    Sheet,
+    SheetContent,
+    SheetTrigger,
+} from "@/components/ui/sheet"
 import {
     BarChart,
     Bar,
@@ -33,6 +43,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { AppSidebar } from "@/components/app-sidebar"
 
 const activityData = [
     { name: 'Mon', value: 400 },
@@ -105,6 +116,7 @@ const recentTransactions = [
 ]
 
 export default function DashboardPage() {
+    const navigate = useNavigate()
     const [stats, setStats] = useState({
         totalBalance: 0,
         totalIncome: 0,
@@ -160,74 +172,32 @@ export default function DashboardPage() {
 
     return (
         <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
-            {/* Sidebar */}
-            <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-slate-200 bg-white">
-                <div className="flex h-full flex-col">
-                    <div className="flex h-20 items-center gap-3 border-b border-slate-100 px-6">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-                            <Wallet className="h-6 w-6 text-white" />
-                        </div>
-                        <span className="text-xl font-bold tracking-tight text-slate-900">FinTrack</span>
+            {/* Mobile Header */}
+            <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between bg-zinc-50/80 backdrop-blur-md px-6 md:hidden">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600">
+                        <svg viewBox="0 0 24 24" className="h-5 w-5 text-white fill-current" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z" />
+                        </svg>
                     </div>
-
-                    <nav className="flex-1 space-y-1 px-4 py-6">
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-3 rounded-xl bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-600 hover:bg-blue-50 hover:text-blue-600"
-                        >
-                            <LayoutDashboard className="h-5 w-5" />
-                            Dashboard
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                            onClick={() => window.location.href = '/transactions'}
-                        >
-                            <Wallet className="h-5 w-5" />
-                            Transactions
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                        >
-                            <PiggyBank className="h-5 w-5" />
-                            Budgets
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                        >
-                            <BarChart3 className="h-5 w-5" />
-                            Reports
-                        </Button>
-                        <Button
-                            variant="ghost"
-                            className="w-full justify-start gap-3 rounded-xl px-4 py-3 text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-                        >
-                            <Settings className="h-5 w-5" />
-                            Settings
-                        </Button>
-                    </nav>
-
-                    <div className="border-t border-slate-100 p-4">
-                        <div className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                            <Avatar className="h-10 w-10 border-2 border-white shadow-sm">
-                                <AvatarImage src="https://github.com/shadcn.png" />
-                                <AvatarFallback>JD</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 overflow-hidden">
-                                <p className="truncate text-sm font-semibold text-slate-900">John Doe</p>
-                                <p className="truncate text-xs text-slate-500">Premium Member</p>
-                            </div>
-                        </div>
-                    </div>
+                    <span className="text-xl font-bold tracking-tight text-slate-900">Dashboard</span>
                 </div>
-            </aside>
+                <div className="flex items-center gap-4">
+                    <Bell className="h-6 w-6 text-slate-600" />
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src="https://github.com/shadcn.png" />
+                        <AvatarFallback>JD</AvatarFallback>
+                    </Avatar>
+                </div>
+            </header>
+
+            {/* Desktop Sidebar */}
+            <AppSidebar />
 
             {/* Main Content */}
-            <main className="ml-64 flex-1 p-8">
-                {/* Header */}
-                <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <main className="flex-1 p-4 md:ml-64 md:p-8 pt-20 md:pt-8 bg-slate-50 pb-24 md:pb-8">
+                {/* Header - Desktop Only */}
+                <div className="hidden md:flex mb-8 flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-slate-900">Overview</h1>
                         <p className="mt-1 text-slate-500">Welcome back, here's what's happening today.</p>
@@ -244,15 +214,26 @@ export default function DashboardPage() {
                     </div>
                 </div>
 
-                {/* Total Balance Card */}
-                <Card className="mb-8 overflow-hidden border-none shadow-sm ring-1 ring-slate-200">
-                    <CardContent className="flex flex-col gap-6 p-0 md:flex-row">
-                        <div className="flex-1 p-8">
-                            <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">Total Balance</p>
-                            <div className="mt-2 flex items-baseline gap-2">
-                                <span className="text-5xl font-bold text-slate-900">${stats.totalBalance.toFixed(2)}</span>
+                {/* Total Balance Card - Updated style for Mobile */}
+                <Card className="mb-6 overflow-hidden border-none shadow-lg md:shadow-sm ring-1 ring-slate-200 bg-gradient-to-br from-blue-600 to-blue-700 text-white md:bg-white md:bg-none md:text-slate-900">
+                    <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:p-0">
+                        <div className="flex-1 md:p-8">
+                            <div className="flex justify-between items-start">
+                                <p className="text-xs font-medium uppercase tracking-wider text-blue-100 md:text-slate-500">Total Balance</p>
+                                <span className="rounded-full bg-blue-500/30 px-2 py-0.5 text-xs font-semibold text-white md:hidden">+2.5%</span>
                             </div>
-                            <div className="mt-4 flex items-center gap-2">
+                            <div className="mt-2 flex items-baseline gap-2">
+                                <span className="text-4xl font-bold md:text-5xl">${stats.totalBalance.toFixed(2)}</span>
+                            </div>
+
+                            {/* Mobile Actions */}
+                            <div className="mt-6 grid grid-cols-2 gap-3 md:hidden">
+                                <Button className="bg-white text-blue-600 hover:bg-blue-50 font-semibold h-10 rounded-xl border-none">Deposit</Button>
+                                <Button className="bg-blue-500/30 text-white hover:bg-blue-500/40 font-semibold h-10 rounded-xl border-none">Transfer</Button>
+                            </div>
+
+                            {/* Desktop Stats */}
+                            <div className="mt-4 hidden md:flex items-center gap-2">
                                 <span className="flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-bold text-green-700">
                                     <TrendingUp className="mr-1 h-3 w-3" />
                                     +2.4%
@@ -260,8 +241,9 @@ export default function DashboardPage() {
                                 <span className="text-sm font-medium text-slate-500">vs last month</span>
                             </div>
                         </div>
-                        <div className="relative h-48 w-full bg-gradient-to-l from-blue-50 to-transparent md:w-96">
-                            {/* Placeholder for a nice gradient area chart */}
+
+                        {/* Desktop Chart Area */}
+                        <div className="relative hidden h-48 w-full bg-gradient-to-l from-blue-50 to-transparent md:block md:w-96">
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={activityData}>
                                     <defs>
@@ -277,8 +259,30 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                {/* KPI Grid */}
-                <div className="mb-8 grid gap-6 md:grid-cols-3">
+                {/* Mobile Income/Expense Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-6 md:hidden">
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
+                                <ArrowDownLeft className="h-3 w-3 text-green-600" />
+                            </div>
+                            <span className="text-xs font-medium text-slate-500">Income</span>
+                        </div>
+                        <p className="text-lg font-bold text-slate-900">${stats.totalIncome.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="h-6 w-6 rounded-full bg-red-100 flex items-center justify-center">
+                                <ArrowUpRight className="h-3 w-3 text-red-600" />
+                            </div>
+                            <span className="text-xs font-medium text-slate-500">Expenses</span>
+                        </div>
+                        <p className="text-lg font-bold text-slate-900">${stats.totalExpense.toFixed(2)}</p>
+                    </div>
+                </div>
+
+                {/* KPI Grid (Desktop Only) */}
+                <div className="hidden mb-8 md:grid gap-6 md:grid-cols-3">
                     <Card className="border-none shadow-sm ring-1 ring-slate-200 transition-all hover:ring-2 hover:ring-blue-100">
                         <CardHeader className="p-6 pb-2">
                             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-50">
@@ -319,7 +323,7 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent className="p-6 pt-2">
                             <p className="text-sm font-medium text-slate-500">Total Savings</p>
-                            <p className="mt-1 text-2xl font-bold text-slate-900">$3,100.00</p>
+                            <p className="mt-1 text-2xl font-bold text-slate-900">${(stats.totalIncome - stats.totalExpense).toFixed(2)}</p>
                             <div className="mt-2 flex items-center text-sm">
                                 <div className="h-2 w-2 rounded-full bg-blue-600 mr-2" />
                                 <span className="font-bold text-blue-600">On track for goals</span>
@@ -328,24 +332,20 @@ export default function DashboardPage() {
                     </Card>
                 </div>
 
-                {/* Lower Section Grid */}
-                <div className="grid gap-6 lg:grid-cols-2">
-                    {/* Spending Overview */}
-                    <Card className="border-none shadow-sm ring-1 ring-slate-200 h-full">
-                        <CardHeader className="flex flex-row items-center justify-between p-6">
-                            <CardTitle className="text-lg font-bold text-slate-900">Spending Overview</CardTitle>
-                            <Button variant="ghost" className="h-8 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                Details
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="p-6 pt-0">
-                            <div className="flex h-[300px] w-full items-center justify-center relative">
+                {/* Spending Breakdown (Mobile & Desktop) */}
+                <Card className="border-none shadow-sm ring-1 ring-slate-200 mb-6">
+                    <CardHeader className="flex flex-row items-center justify-between p-6 pb-2">
+                        <CardTitle className="text-lg font-bold text-slate-900">Spending Breakdown</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6 pt-0">
+                        <div className="flex flex-col items-center">
+                            <div className="relative h-[200px] w-full max-w-[200px] my-4">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <PieChart>
                                         <Pie
                                             data={spendingData}
-                                            innerRadius={80}
-                                            outerRadius={110}
+                                            innerRadius={60}
+                                            outerRadius={80}
                                             paddingAngle={0}
                                             dataKey="value"
                                         >
@@ -357,56 +357,86 @@ export default function DashboardPage() {
                                     </PieChart>
                                 </ResponsiveContainer>
                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                    <span className="text-sm font-medium text-slate-500">TOTAL</span>
-                                    <span className="text-3xl font-bold text-slate-900">$2,100</span>
+                                    <span className="text-xs font-medium text-slate-400 uppercase">Total Spent</span>
+                                    <span className="text-xl font-bold text-slate-900">${stats.totalExpense.toFixed(0)}</span>
                                 </div>
                             </div>
-                            <div className="mt-4 grid grid-cols-2 gap-4">
+
+                            {/* Legend */}
+                            <div className="grid grid-cols-2 gap-x-8 gap-y-2 w-full max-w-xs mt-2">
                                 {spendingData.map((item) => (
                                     <div key={item.name} className="flex items-center gap-2">
-                                        <div className="h-3 w-3 rounded-full" style={{ backgroundColor: item.color }} />
-                                        <span className="text-sm font-medium text-slate-600">{item.name} ({item.value}%)</span>
+                                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+                                        <span className="text-xs text-slate-500">{item.name} ({item.value}%)</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Recent Activity */}
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="border-none shadow-sm ring-1 ring-slate-200 h-full">
+                        <CardHeader className="flex flex-row items-center justify-between p-6 pb-4">
+                            <CardTitle className="text-lg font-bold text-slate-900">Recent Activity</CardTitle>
+                            <Button variant="ghost" className="h-8 text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2" onClick={() => navigate('/transactions')}>
+                                See All
+                            </Button>
+                        </CardHeader>
+                        <CardContent className="p-6 pt-0">
+                            <div className="space-y-4">
+                                {recentParams.map((transaction) => (
+                                    <div key={transaction.id} className="flex items-center gap-4 group cursor-pointer py-2 border-b border-slate-50 last:border-0 hover:bg-slate-50/50 rounded-lg transition-colors">
+                                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-lg`}>
+                                            {transaction.icon}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-bold text-slate-900 truncate">{transaction.name}</p>
+                                            <div className="flex items-center gap-1 text-xs text-slate-500">
+                                                <span className="truncate">{transaction.time || "Today, 8:45 AM"}</span>
+                                            </div>
+                                        </div>
+                                        <span className={`font-bold whitespace-nowrap ${transaction.amount > 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                            {transaction.amount > 0 ? '+' : ''}{parseFloat(transaction.amount).toFixed(2)}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                         </CardContent>
                     </Card>
-
-                    {/* Recent Activity */}
-                    <Card className="border-none shadow-sm ring-1 ring-slate-200 h-full">
-                        <CardHeader className="flex flex-row items-center justify-between p-6">
-                            <CardTitle className="text-lg font-bold text-slate-900">Recent Activity</CardTitle>
-                            <Button variant="ghost" className="h-8 text-sm font-semibold text-blue-600 hover:text-blue-700 hover:bg-blue-50">
-                                View All
-                            </Button>
-                        </CardHeader>
-                        <CardContent className="p-6 pt-0">
-                            <div className="space-y-6">
-                                <div className="space-y-6">
-                                    {recentParams.map((transaction) => (
-                                        <div key={transaction.id} className="flex items-center gap-4 group cursor-pointer">
-                                            <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-xl group-hover:bg-blue-50 group-hover:scale-105 transition-all`}>
-                                                {transaction.icon}
-                                            </div>
-                                            <div className="flex-1">
-                                                <p className="font-bold text-slate-900">{transaction.name}</p>
-                                                <div className="flex items-center gap-1 text-xs text-slate-500">
-                                                    <span>{transaction.category}</span>
-                                                    <span>•</span>
-                                                    <span>{transaction.time}</span>
-                                                </div>
-                                            </div>
-                                            <span className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-slate-900'}`}>
-                                                {transaction.amount > 0 ? '+' : ''}{parseFloat(transaction.amount).toFixed(2)}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
                 </div>
             </main>
+
+            {/* Bottom Navigation - Mobile Only */}
+            <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 h-20 px-6 pb-2 md:hidden">
+                <div className="flex items-center justify-between h-full relative">
+                    <button className="flex flex-col items-center gap-1 text-blue-600">
+                        <Home className="h-6 w-6" fill="currentColor" />
+                        <span className="text-[10px] font-medium">Home</span>
+                    </button>
+                    <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600" onClick={() => navigate('/transactions')}>
+                        <History className="h-6 w-6" />
+                        <span className="text-[10px] font-medium">History</span>
+                    </button>
+
+                    {/* Floating Action Button */}
+                    <div className="absolute left-1/2 -top-6 -translate-x-1/2">
+                        <button className="h-14 w-14 bg-blue-600 rounded-full shadow-lg shadow-blue-600/30 flex items-center justify-center text-white hover:bg-blue-700 transition-transform active:scale-95" onClick={() => navigate('/transactions')}>
+                            <Plus className="h-7 w-7" />
+                        </button>
+                    </div>
+
+                    <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600" onClick={() => navigate('/budget')}>
+                        <Wallet className="h-6 w-6" />
+                        <span className="text-[10px] font-medium">Budget</span>
+                    </button>
+                    <button className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600">
+                        <User className="h-6 w-6" />
+                        <span className="text-[10px] font-medium">Profile</span>
+                    </button>
+                </div>
+            </nav>
         </div>
     )
 }
