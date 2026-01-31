@@ -11,8 +11,10 @@ import {
     Search,
     Bell,
     ChevronDown,
-    MoreHorizontal
+    MoreHorizontal,
+    Loader2
 } from "lucide-react"
+import { useEffect, useState } from "react"
 import {
     BarChart,
     Bar,
@@ -103,6 +105,59 @@ const recentTransactions = [
 ]
 
 export default function DashboardPage() {
+    const [stats, setStats] = useState({
+        totalBalance: 0,
+        totalIncome: 0,
+        totalExpense: 0
+    })
+    const [recentParams, setRecentParams] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const response = await fetch("http://localhost:8080/api/dashboard")
+                if (!response.ok) throw new Error("Failed to fetch")
+                const data = await response.json()
+
+                if (data.stats) {
+                    setStats({
+                        totalBalance: data.stats.totalBalance || 0,
+                        totalIncome: data.stats.totalIncome || 0,
+                        totalExpense: Math.abs(data.stats.totalExpense || 0)
+                    })
+                }
+
+                if (data.transactions) {
+                    setRecentParams(data.transactions.map((t: any) => ({
+                        id: t.id,
+                        name: t.description,
+                        category: t.category,
+                        time: new Date(t.date).toLocaleDateString(),
+                        amount: t.amount,
+                        icon: "💰", // Default icon for now
+                        bg: "bg-slate-100",
+                        color: "text-slate-600"
+                    })))
+                }
+            } catch (error) {
+                console.error("Error loading dashboard data:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+
+        fetchData()
+    }, [])
+
+    if (loading) {
+        return (
+            <div className="flex h-screen items-center justify-center bg-slate-50">
+                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+        )
+    }
+
     return (
         <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
             {/* Sidebar */}
@@ -195,7 +250,7 @@ export default function DashboardPage() {
                         <div className="flex-1 p-8">
                             <p className="text-sm font-semibold uppercase tracking-wider text-slate-500">Total Balance</p>
                             <div className="mt-2 flex items-baseline gap-2">
-                                <span className="text-5xl font-bold text-slate-900">$12,450.00</span>
+                                <span className="text-5xl font-bold text-slate-900">${stats.totalBalance.toFixed(2)}</span>
                             </div>
                             <div className="mt-4 flex items-center gap-2">
                                 <span className="flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-sm font-bold text-green-700">
@@ -232,7 +287,7 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent className="p-6 pt-2">
                             <p className="text-sm font-medium text-slate-500">Monthly Income</p>
-                            <p className="mt-1 text-2xl font-bold text-slate-900">$5,200.00</p>
+                            <p className="mt-1 text-2xl font-bold text-slate-900">${stats.totalIncome.toFixed(2)}</p>
                             <div className="mt-2 flex items-center text-sm">
                                 <span className="font-bold text-green-600">↑ 12%</span>
                                 <span className="ml-1 text-slate-400">increase</span>
@@ -248,7 +303,7 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent className="p-6 pt-2">
                             <p className="text-sm font-medium text-slate-500">Monthly Expenses</p>
-                            <p className="mt-1 text-2xl font-bold text-slate-900">$2,100.00</p>
+                            <p className="mt-1 text-2xl font-bold text-slate-900">${stats.totalExpense.toFixed(2)}</p>
                             <div className="mt-2 flex items-center text-sm">
                                 <span className="font-bold text-red-600">↓ 5%</span>
                                 <span className="ml-1 text-slate-400">decrease</span>
@@ -327,24 +382,26 @@ export default function DashboardPage() {
                         </CardHeader>
                         <CardContent className="p-6 pt-0">
                             <div className="space-y-6">
-                                {recentTransactions.map((transaction) => (
-                                    <div key={transaction.id} className="flex items-center gap-4 group cursor-pointer">
-                                        <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-xl group-hover:bg-blue-50 group-hover:scale-105 transition-all`}>
-                                            {transaction.icon}
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="font-bold text-slate-900">{transaction.name}</p>
-                                            <div className="flex items-center gap-1 text-xs text-slate-500">
-                                                <span>{transaction.category}</span>
-                                                <span>•</span>
-                                                <span>{transaction.time}</span>
+                                <div className="space-y-6">
+                                    {recentParams.map((transaction) => (
+                                        <div key={transaction.id} className="flex items-center gap-4 group cursor-pointer">
+                                            <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-xl group-hover:bg-blue-50 group-hover:scale-105 transition-all`}>
+                                                {transaction.icon}
                                             </div>
+                                            <div className="flex-1">
+                                                <p className="font-bold text-slate-900">{transaction.name}</p>
+                                                <div className="flex items-center gap-1 text-xs text-slate-500">
+                                                    <span>{transaction.category}</span>
+                                                    <span>•</span>
+                                                    <span>{transaction.time}</span>
+                                                </div>
+                                            </div>
+                                            <span className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-slate-900'}`}>
+                                                {transaction.amount > 0 ? '+' : ''}{parseFloat(transaction.amount).toFixed(2)}
+                                            </span>
                                         </div>
-                                        <span className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-slate-900'}`}>
-                                            {transaction.amount > 0 ? '+' : ''}{transaction.amount.toFixed(2)}
-                                        </span>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         </CardContent>
                     </Card>
