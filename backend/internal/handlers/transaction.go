@@ -14,24 +14,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// GetDashboardData fetches stats and recent transactions
+// GetDashboardData fetches stats, recent transactions, and chart data
 func GetDashboardData(c *gin.Context) {
-	// In a real app, get UserID from context (set by auth middleware)
-	// userID := c.GetString("userID")
-	// For now, we'll mock or just fetch all for demo if no auth middleware yet
-
-	// Temporarily simulate a specific user or fetch all
-	// To make this work without proper auth middleware yet, we might need to pass userID in query or header
-	// OR, for this demo, let's just create a dummy "demo" mode or try to find a user.
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	collection := db.Client.Database("fintrack").Collection("transactions")
 
-	// 1. Calculate Stats (Balance, Income, Expense)
-	// Pipeline to aggregate
-	pipeline := mongo.Pipeline{
+	// 1. Calculate Overall Stats (Balance, Income, Expense)
+	statsPipeline := mongo.Pipeline{
 		{{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: nil},
 			{Key: "totalBalance", Value: bson.D{{Key: "$sum", Value: "$amount"}}},
@@ -40,7 +31,7 @@ func GetDashboardData(c *gin.Context) {
 		}}},
 	}
 
-	cursor, err := collection.Aggregate(ctx, pipeline)
+	cursor, err := collection.Aggregate(ctx, statsPipeline)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to aggregate stats"})
 		return
@@ -56,17 +47,10 @@ func GetDashboardData(c *gin.Context) {
 	if len(stats) > 0 {
 		responseStats = stats[0]
 	} else {
-		// Default zero values
-		responseStats = bson.M{
-			"totalBalance": 0,
-			"totalIncome":  0,
-			"totalExpense": 0,
-		}
+		responseStats = bson.M{"totalBalance": 0, "totalIncome": 0, "totalExpense": 0}
 	}
 
 	// 2. Fetch Recent Transactions
-	// Create seed data if empty? (Optional)
-
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "date", Value: -1}})
 	findOptions.SetLimit(5)
@@ -83,9 +67,65 @@ func GetDashboardData(c *gin.Context) {
 		return
 	}
 
+	// 3. Monthly Stats (Last 6 Months)
+	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
+	monthlyPipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "date", Value: bson.D{{Key: "$gte", Value: sixMonthsAgo}}}}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{
+				{Key: "year", Value: bson.D{{Key: "$year", Value: "$date"}}},
+				{Key: "month", Value: bson.D{{Key: "$month", Value: "$date"}}},
+			}},
+			{Key: "income", Value: bson.D{{Key: "$sum", Value: bson.D{{Key: "$cond", Value: bson.A{bson.D{{Key: "$gt", Value: bson.A{"$amount", 0}}}, "$amount", 0}}}}}},
+			{Key: "expense", Value: bson.D{{Key: "$sum", Value: bson.D{{Key: "$cond", Value: bson.A{bson.D{{Key: "$lt", Value: bson.A{"$amount", 0}}}, "$amount", 0}}}}}},
+		}}},
+		{{Key: "$sort", Value: bson.D{{Key: "_id.year", Value: 1}, {Key: "_id.month", Value: 1}}}},
+	}
+
+	cursor, _ = collection.Aggregate(ctx, monthlyPipeline)
+	var monthlyStats []bson.M
+	cursor.All(ctx, &monthlyStats)
+
+	// 4. Category Stats (Expenses only)
+	categoryPipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "amount", Value: bson.D{{Key: "$lt", Value: 0}}}}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: "$category"},
+			{Key: "value", Value: bson.D{{Key: "$sum", Value: "$amount"}}},
+		}}},
+		{{Key: "$sort", Value: bson.D{{Key: "value", Value: 1}}}}, // Sort by largest expense (most negative)
+	}
+
+	cursor, _ = collection.Aggregate(ctx, categoryPipeline)
+	var categoryStats []bson.M
+	cursor.All(ctx, &categoryStats)
+
+	// 5. Daily Stats (Last 7 Days)
+	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
+	dailyPipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "date", Value: bson.D{{Key: "$gte", Value: sevenDaysAgo}}}}}},
+		{{Key: "$group", Value: bson.D{
+			{Key: "_id", Value: bson.D{
+				{Key: "year", Value: bson.D{{Key: "$year", Value: "$date"}}},
+				{Key: "month", Value: bson.D{{Key: "$month", Value: "$date"}}},
+				{Key: "day", Value: bson.D{{Key: "$dayOfMonth", Value: "$date"}}},
+			}},
+			{Key: "income", Value: bson.D{{Key: "$sum", Value: bson.D{{Key: "$cond", Value: bson.A{bson.D{{Key: "$gt", Value: bson.A{"$amount", 0}}}, "$amount", 0}}}}}},
+			{Key: "expense", Value: bson.D{{Key: "$sum", Value: bson.D{{Key: "$cond", Value: bson.A{bson.D{{Key: "$lt", Value: bson.A{"$amount", 0}}}, "$amount", 0}}}}}},
+		}}},
+		{{Key: "$sort", Value: bson.D{{Key: "_id.year", Value: 1}, {Key: "_id.month", Value: 1}, {Key: "_id.day", Value: 1}}}},
+	}
+
+	cursor, _ = collection.Aggregate(ctx, dailyPipeline)
+	var dailyStats []bson.M
+	cursor.All(ctx, &dailyStats)
+
 	c.JSON(http.StatusOK, gin.H{
-		"stats":        responseStats,
-		"transactions": transactions,
+		"stats":         responseStats,
+		"transactions":  transactions,
+		"monthlyStats":  monthlyStats,
+		"categoryStats": categoryStats,
+		"dailyStats":    dailyStats,
 	})
 }
 
@@ -98,7 +138,9 @@ func CreateTransaction(c *gin.Context) {
 	}
 
 	transaction.ID = primitive.NewObjectID()
-	transaction.Date = time.Now()
+	if transaction.Date.IsZero() {
+		transaction.Date = time.Now()
+	}
 	transaction.CreatedAt = time.Now()
 
 	// Determine type based on amount if not set

@@ -31,5 +31,13 @@ func SetupRoutes(r *gin.Engine) {
 		// Budget
 		api.GET("/budget", handlers.GetBudgetOverview)
 		api.POST("/budget/category", handlers.CreateBudgetCategory)
+		api.PUT("/budget/category/:id", handlers.UpdateBudgetCategory)
+		api.DELETE("/budget/category/:id", handlers.DeleteBudgetCategory)
+
+		// Goals
+		api.GET("/goals", handlers.GetGoals)
+		api.POST("/goals", handlers.CreateGoal)
+		api.PUT("/goals/:id", handlers.UpdateGoal)
+		api.DELETE("/goals/:id", handlers.DeleteGoal)
 	}
 }

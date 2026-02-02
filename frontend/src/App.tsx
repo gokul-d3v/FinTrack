@@ -1,25 +1,32 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
-import LoginPage from "./components/login-page"
-import SignupPage from "./components/signup-page"
-import ForgotPasswordPage from "./components/forgot-password-page"
-import DashboardPage from "./components/dashboard-page"
-import TransactionsPage from "./components/transactions-page"
-import BudgetPlannerPage from "./components/budget-planner-page"
+import { MainLayout } from "./components/layout/main-layout"
+import FinancialLedgerPage from "./components/pages/financial-ledger-page"
+import DashboardPage from "./components/pages/dashboard-page"
+
+import SettingsPage from "./components/pages/settings-page"
+import AddTransactionPage from "./components/pages/add-transaction-page"
+import SavingsGoalsPage from "./components/pages/savings-goals-page"
+import AddGoalPage from "./components/pages/add-goal-page"
+import BudgetPage from "./components/pages/budget-page"
 import { Toaster } from "@/components/ui/sonner"
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/transactions" element={<TransactionsPage />} />
-        <Route path="/budget" element={<BudgetPlannerPage />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-      <Toaster />
+      <MainLayout>
+        <Routes>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/tracker" element={<FinancialLedgerPage />} />
+
+          <Route path="/add-transaction" element={<AddTransactionPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/savings-goals" element={<SavingsGoalsPage />} />
+          <Route path="/savings-goals/new" element={<AddGoalPage />} />
+          <Route path="/budget" element={<BudgetPage />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+        <Toaster />
+      </MainLayout>
     </BrowserRouter>
   )
 }

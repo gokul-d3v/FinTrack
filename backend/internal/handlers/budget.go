@@ -47,9 +47,9 @@ func GetBudgetOverview(c *gin.Context) {
 	startDate := time.Date(currentYear, currentMonth, 1, 0, 0, 0, 0, now.Location())
 	endDate := startDate.AddDate(0, 1, 0)
 
-	// If no budgets exist, seed some defaults!
+	// If no budgets exist, return empty list (no seeding)
 	if len(budgets) == 0 {
-		budgets = SeedDefaultBudgets(userID)
+		budgets = []models.BudgetCategory{}
 	}
 
 	// 2. Get Transactions for the current month (Expenses only)
@@ -173,28 +173,72 @@ func CreateBudgetCategory(c *gin.Context) {
 	c.JSON(http.StatusCreated, input)
 }
 
-func SeedDefaultBudgets(userID primitive.ObjectID) []models.BudgetCategory {
-	defaults := []models.BudgetCategory{
-		{UserID: userID, Name: "Food", Limit: 800, Icon: "Utensils", Color: "orange"},
-		{UserID: userID, Name: "Rent & Housing", Limit: 2400, Icon: "Home", Color: "green"},
-		{UserID: userID, Name: "Transport", Limit: 300, Icon: "Bus", Color: "blue"}, // mapped to Plane icon in UI often, or Bus
-		{UserID: userID, Name: "Entertainment", Limit: 400, Icon: "Music", Color: "purple"},
-		{UserID: userID, Name: "Bills", Limit: 500, Icon: "Zap", Color: "yellow"},
-		{UserID: userID, Name: "Shopping", Limit: 600, Icon: "ShoppingBag", Color: "pink"},
+// UpdateBudgetCategory updates an existing budget category
+func UpdateBudgetCategory(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
 	}
 
-	var result []models.BudgetCategory
-	ctx := context.TODO()
-
-	for _, b := range defaults {
-		b.ID = primitive.NewObjectID()
-		b.CreatedAt = time.Now()
-		b.UpdatedAt = time.Now()
-
-		_, err := db.Client.Database("fintrack").Collection("budgets").InsertOne(ctx, b)
-		if err == nil {
-			result = append(result, b)
-		}
+	var input models.BudgetCategory
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	return result
+
+	input.UpdatedAt = time.Now()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	update := bson.M{
+		"$set": bson.M{
+			"name":       input.Name,
+			"limit":      input.Limit,
+			"icon":       input.Icon,
+			"color":      input.Color,
+			"updated_at": input.UpdatedAt,
+		},
+	}
+
+	result, err := db.Client.Database("fintrack").Collection("budgets").UpdateOne(ctx, bson.M{"_id": id}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update budget"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Budget category not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Budget updated successfully"})
+}
+
+// DeleteBudgetCategory removes a budget category
+func DeleteBudgetCategory(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID format"})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	result, err := db.Client.Database("fintrack").Collection("budgets").DeleteOne(ctx, bson.M{"_id": id})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete budget"})
+		return
+	}
+
+	if result.DeletedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Budget category not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Budget deleted successfully"})
 }
