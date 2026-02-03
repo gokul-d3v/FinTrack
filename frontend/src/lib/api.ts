@@ -94,6 +94,11 @@ export const createTransaction = async (data: Omit<Transaction, 'id'>) => {
     return response.data;
 };
 
+export const updateTransaction = async (id: string, data: Partial<Transaction>) => {
+    const response = await api.put(`/transactions/${id}`, data);
+    return response.data;
+};
+
 export const seedData = async () => {
     const response = await api.get('/seed');
     return response.data;

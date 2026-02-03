@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function BudgetPage() {
     const [budgetData, setBudgetData] = useState<BudgetOverviewResponse | null>(null);
@@ -124,7 +125,31 @@ export default function BudgetPage() {
 
                 {/* Categories List */}
                 {loading ? (
-                    <div className="col-span-3 text-center p-12 text-slate-500">Loading budgets...</div>
+                    // Skeleton Loading State
+                    [...Array(3)].map((_, i) => (
+                        <div key={i} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative">
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                    <Skeleton className="w-10 h-10 rounded-lg" />
+                                    <div>
+                                        <Skeleton className="h-5 w-32 mb-1" />
+                                        <Skeleton className="h-3 w-16" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-2 mb-4">
+                                <div className="flex justify-between">
+                                    <Skeleton className="h-4 w-12" />
+                                    <Skeleton className="h-4 w-20" />
+                                </div>
+                                <Skeleton className="w-full h-2 rounded-full" />
+                                <div className="flex justify-between">
+                                    <Skeleton className="h-3 w-16" />
+                                    <Skeleton className="h-3 w-20" />
+                                </div>
+                            </div>
+                        </div>
+                    ))
                 ) : (budgetData?.categories || []).map((cat) => (
                     <div key={cat.id} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group">
                         <div className="flex justify-between items-start mb-4">

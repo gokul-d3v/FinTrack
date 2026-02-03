@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function SavingsGoalsPage() {
     const [goals, setGoals] = useState<Goal[]>([]);
@@ -96,7 +97,27 @@ export default function SavingsGoalsPage() {
     };
 
     if (loading) {
-        return <div className="p-8">Loading...</div>;
+        return (
+            <div className="p-8 space-y-6">
+                <div className="flex items-end justify-between">
+                    <div>
+                        <Skeleton className="h-10 w-64 mb-2" />
+                        <Skeleton className="h-4 w-48" />
+                    </div>
+                    <Skeleton className="h-10 w-32" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Skeleton className="h-32 rounded-2xl" />
+                    <Skeleton className="h-32 rounded-2xl" />
+                    <Skeleton className="h-32 rounded-2xl" />
+                </div>
+                <Skeleton className="h-8 w-40 mt-4" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Skeleton className="h-48 rounded-2xl" />
+                    <Skeleton className="h-48 rounded-2xl" />
+                </div>
+            </div>
+        );
     }
 
     const totalSaved = goals.reduce((sum, goal) => sum + goal.current_amount, 0);

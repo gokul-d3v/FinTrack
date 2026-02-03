@@ -10,8 +10,6 @@ export function Header() {
                     <span className="material-symbols-outlined text-slate-500">menu</span>
                 </button>
                 <div className="flex items-center gap-2 text-slate-400">
-                    <span className="material-symbols-outlined text-sm">refresh</span>
-                    <span className="text-sm mono-text uppercase tracking-widest text-[10px]">Real-time Sync Active</span>
                 </div>
             </div>
             <div className="flex items-center gap-4">

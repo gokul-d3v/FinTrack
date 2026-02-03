@@ -6,44 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { getDashboardData, type DashboardData } from "@/lib/api"
 import { toast } from "sonner"
+import { Skeleton } from "@/components/ui/skeleton"
 
-const data = [
-    { name: 'Jan', value: 4000 },
-    { name: 'Feb', value: 3000 },
-    { name: 'Mar', value: 5000 },
-    { name: 'Apr', value: 4500 },
-    { name: 'May', value: 6000 },
-    { name: 'Jun', value: 5500 },
-    { name: 'Jul', value: 7000 },
-]
 
-const barData = [
-    { name: 'Mon', income: 500, expense: 300 },
-    { name: 'Tue', income: 400, expense: 450 },
-    { name: 'Wed', income: 600, expense: 200 },
-    { name: 'Thu', income: 800, expense: 500 },
-    { name: 'Fri', income: 1000, expense: 800 },
-    { name: 'Sat', income: 200, expense: 400 },
-    { name: 'Sun', income: 100, expense: 150 },
-]
-
-const categoryData = [
-    { name: 'Housing', value: 2450, color: '#ef4444' }, // red
-    { name: 'Food & Dining', value: 980, color: '#f97316' }, // orange
-    { name: 'Transportation', value: 450, color: '#eab308' }, // yellow
-    { name: 'Technology', value: 1299, color: '#3b82f6' }, // blue
-    { name: 'Entertainment', value: 180, color: '#8b5cf6' }, // purple
-    { name: 'Others', value: 350, color: '#64748b' }, // slate
-]
-
-const trendData = [
-    { month: 'Jan', income: 8500, expense: 4200 },
-    { month: 'Feb', income: 8500, expense: 5700 },
-    { month: 'Mar', income: 9000, expense: 4100 },
-    { month: 'Apr', income: 8700, expense: 4800 },
-    { month: 'May', income: 9200, expense: 6000 },
-    { month: 'Jun', income: 8800, expense: 5200 },
-]
 
 export default function DashboardPage() {
     const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
@@ -101,8 +66,68 @@ export default function DashboardPage() {
         fetchData();
     }, []);
 
+
+
     if (loading) {
-        return <div className="p-8">Loading dashboard...</div>;
+        return (
+            <div className="p-8 space-y-8">
+                <div className="flex flex-col md:flex-row justify-between items-end gap-4">
+                    <div>
+                        <Skeleton className="h-10 w-48 mb-2" />
+                        <Skeleton className="h-4 w-64" />
+                    </div>
+                    <div className="flex gap-2">
+                        <Skeleton className="h-9 w-32" />
+                        <Skeleton className="h-9 w-32" />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[...Array(4)].map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                                <Skeleton className="h-4 w-24" />
+                                <Skeleton className="h-4 w-4 rounded-full" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-32 mb-2" />
+                                <Skeleton className="h-4 w-24" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+
+                <div className="space-y-4">
+                    <div className="flex justify-between items-center">
+                        <div className="flex gap-2">
+                            <Skeleton className="h-10 w-24" />
+                            <Skeleton className="h-10 w-40" />
+                            <Skeleton className="h-10 w-24" />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <Card className="lg:col-span-2">
+                            <CardHeader>
+                                <Skeleton className="h-6 w-48 mb-2" />
+                                <Skeleton className="h-4 w-32" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-[300px] w-full" />
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader>
+                                <Skeleton className="h-6 w-48 mb-2" />
+                                <Skeleton className="h-4 w-32" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-[300px] w-full" />
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     // Use real data if available, otherwise fallbacks (zeros) to avoid crashes
@@ -210,7 +235,7 @@ export default function DashboardPage() {
                             <CardContent>
                                 <div className="h-[300px] w-full">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={processedChartData.netWorth && processedChartData.netWorth.length > 0 ? processedChartData.netWorth : data}>
+                                        <AreaChart data={processedChartData.netWorth}>
                                             <defs>
                                                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
                                                     <stop offset="5%" stopColor="#2563eb" stopOpacity={0.3} />
@@ -256,7 +281,7 @@ export default function DashboardPage() {
                             <CardContent>
                                 <div className="h-[300px] w-full">
                                     <ResponsiveContainer width="100%" height="100%">
-                                        <BarChart data={processedChartData.dailyActivity && processedChartData.dailyActivity.length > 0 ? processedChartData.dailyActivity : barData}>
+                                        <BarChart data={processedChartData.dailyActivity}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                             <XAxis
                                                 dataKey="name"
@@ -290,7 +315,7 @@ export default function DashboardPage() {
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
                                             <Pie
-                                                data={processedChartData.categories && processedChartData.categories.length > 0 ? processedChartData.categories : categoryData}
+                                                data={processedChartData.categories}
                                                 cx="50%"
                                                 cy="50%"
                                                 innerRadius={60}
@@ -298,7 +323,7 @@ export default function DashboardPage() {
                                                 paddingAngle={5}
                                                 dataKey="value"
                                             >
-                                                {(processedChartData.categories && processedChartData.categories.length > 0 ? processedChartData.categories : categoryData).map((entry: any, index: any) => (
+                                                {processedChartData.categories.map((entry: any, index: any) => (
                                                     <Cell key={`cell-${index}`} fill={entry.color} />
                                                 ))}
                                             </Pie>
@@ -318,7 +343,7 @@ export default function DashboardPage() {
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-4">
-                                    {(processedChartData.categories && processedChartData.categories.length > 0 ? processedChartData.categories : categoryData).map((item: any) => (
+                                    {processedChartData.categories.map((item: any) => (
                                         <div key={item.name} className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
@@ -347,7 +372,7 @@ export default function DashboardPage() {
                         <CardContent>
                             <div className="h-[400px] w-full">
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={processedChartData.trends && processedChartData.trends.length > 0 ? processedChartData.trends : trendData}>
+                                    <LineChart data={processedChartData.trends}>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
                                         <XAxis
                                             dataKey="month"

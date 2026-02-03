@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { getTransactions, type Transaction, getBudgetOverview, type BudgetOverviewResponse, createBudgetCategory } from "@/lib/api";
+import { getTransactions, type Transaction, getBudgetOverview, type BudgetOverviewResponse, createBudgetCategory, updateTransaction } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -18,6 +19,11 @@ export default function FinancialLedgerPage() {
     // Budget Modal State
     const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false);
     const [newBudget, setNewBudget] = useState({ name: "", limit: "", icon: "Tag", color: "blue" });
+
+    // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+    const [editForm, setEditForm] = useState({ description: "", amount: "", type: "expense", category: "", date: "" });
 
     const fetchData = async () => {
         try {
@@ -57,6 +63,43 @@ export default function FinancialLedgerPage() {
         } catch (error) {
             console.error(error);
             toast.error("Failed to create budget");
+        }
+    };
+
+    const handleEditClick = (t: Transaction) => {
+        setEditingTransaction(t);
+        setEditForm({
+            description: t.description,
+            amount: Math.abs(t.amount).toString(), // Show absolute value for editing
+            type: t.type,
+            category: t.category,
+            date: t.date.split('T')[0] // Format for input type=date
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingTransaction) return;
+
+        try {
+            const finalAmount = editForm.type === 'expense'
+                ? -Math.abs(parseFloat(editForm.amount))
+                : Math.abs(parseFloat(editForm.amount));
+
+            await updateTransaction(editingTransaction.id, {
+                description: editForm.description,
+                amount: finalAmount,
+                type: editForm.type as 'income' | 'expense',
+                category: editForm.category,
+                date: new Date(editForm.date).toISOString()
+            });
+
+            toast.success("Transaction updated!");
+            setIsEditModalOpen(false);
+            fetchData(); // Refresh data
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to update transaction");
         }
     };
 
@@ -168,9 +211,17 @@ export default function FinancialLedgerPage() {
                         </thead>
                         <tbody className="divide-y divide-slate-50 dark:divide-slate-800/50">
                             {loading ? (
-                                <tr>
-                                    <td colSpan={6} className="p-8 text-center text-slate-500">Loading transactions...</td>
-                                </tr>
+                                // Skeleton Rows
+                                [...Array(5)].map((_, i) => (
+                                    <tr key={i}>
+                                        <td className="p-4"><div className="flex gap-3"><Skeleton className="h-9 w-9 rounded-lg" /><div><Skeleton className="h-4 w-32 mb-1" /><Skeleton className="h-3 w-16" /></div></div></td>
+                                        <td className="p-4"><Skeleton className="h-5 w-20 rounded-md" /></td>
+                                        <td className="p-4"><Skeleton className="h-4 w-24" /></td>
+                                        <td className="p-4"><Skeleton className="h-4 w-16 rounded-full" /></td>
+                                        <td className="p-4 text-right"><Skeleton className="h-5 w-24 ml-auto" /></td>
+                                        <td className="p-4"></td>
+                                    </tr>
+                                ))
                             ) : filteredTransactions.length === 0 ? (
                                 <tr>
                                     <td colSpan={6} className="p-8 text-center text-slate-500">No transactions found.</td>
@@ -208,7 +259,7 @@ export default function FinancialLedgerPage() {
                                             </span>
                                         </td>
                                         <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1 hover:text-primary transition-colors">
+                                            <button onClick={() => handleEditClick(t)} className="p-1 hover:text-primary transition-colors">
                                                 <span className="material-symbols-outlined text-lg">edit</span>
                                             </button>
                                         </td>
@@ -219,6 +270,77 @@ export default function FinancialLedgerPage() {
                     </table>
                 </div>
             </div>
+            <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Transaction</DialogTitle>
+                        <DialogDescription>Update transaction details.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Input
+                                value={editForm.description}
+                                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Type</Label>
+                            <Select
+                                value={editForm.type}
+                                onValueChange={(v) => setEditForm({ ...editForm, type: v })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="expense">Expense</SelectItem>
+                                    <SelectItem value="income">Income</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Amount</Label>
+                            <Input
+                                type="number"
+                                value={editForm.amount}
+                                onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Category</Label>
+                            <Select
+                                value={editForm.category}
+                                onValueChange={(v) => setEditForm({ ...editForm, category: v })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {/* Use budget categories if available, else static list fallback */}
+                                    {(budgetData?.categories || []).map(cat => (
+                                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                    ))}
+                                    <SelectItem value="Income">Income</SelectItem>
+                                    <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Date</Label>
+                            <Input
+                                type="date"
+                                value={editForm.date}
+                                onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveEdit}>Save Changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

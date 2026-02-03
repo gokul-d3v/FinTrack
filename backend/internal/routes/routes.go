@@ -32,6 +32,7 @@ func SetupRoutes(r *gin.Engine) {
 			protected.GET("/dashboard", handlers.GetDashboardData)
 			protected.GET("/transactions", handlers.GetTransactions)
 			protected.POST("/transactions", handlers.CreateTransaction)
+			protected.PUT("/transactions/:id", handlers.UpdateTransaction)
 
 			// Budget
 			protected.GET("/budget", handlers.GetBudgetOverview)

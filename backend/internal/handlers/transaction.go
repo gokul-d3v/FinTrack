@@ -222,6 +222,65 @@ func GetTransactions(c *gin.Context) {
 	c.JSON(http.StatusOK, transactions)
 }
 
+// UpdateTransaction modifies an existing transaction
+func UpdateTransaction(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid ID"})
+		return
+	}
+
+	var updateData struct {
+		Date        time.Time `json:"date"`
+		Description string    `json:"description"`
+		Category    string    `json:"category"`
+		Amount      float64   `json:"amount"`
+		Type        string    `json:"type"`
+	}
+
+	if err := c.ShouldBindJSON(&updateData); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Ensure user owns the transaction
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	collection := db.Client.Database("fintrack").Collection("transactions")
+
+	update := bson.M{
+		"$set": bson.M{
+			"date":        updateData.Date,
+			"description": updateData.Description,
+			"category":    updateData.Category,
+			"amount":      updateData.Amount,
+			"type":        updateData.Type,
+		},
+	}
+
+	result, err := collection.UpdateOne(ctx, bson.M{"_id": id, "user_id": userObjectID}, update)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update transaction"})
+		return
+	}
+
+	if result.MatchedCount == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Transaction not found or unauthorized"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Transaction updated"})
+}
+
 // SeedData inserts some dummy data for testing
 func SeedData(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
