@@ -9,6 +9,44 @@ const api = axios.create({
     },
 });
 
+// Add a request interceptor to attach the JWT token
+api.interceptors.request.use(
+    (config) => {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const data = JSON.parse(userStr);
+                // Check if data has token (new format) or is just user object
+                // We'll standardize on storing { token: "...", user: {...} } or similar
+                if (data.token) {
+                    config.headers.Authorization = `Bearer ${data.token}`;
+                }
+            } catch (e) {
+                console.error("Error parsing user from localStorage", e);
+            }
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
+    }
+);
+
+// Add a response interceptor to handle 401 errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('user');
+            // Optional: Redirect to login if not already there
+            if (!window.location.pathname.includes('/login')) {
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export interface Transaction {
     id: string;
     description: string;
@@ -48,7 +86,7 @@ export const getDashboardData = async (): Promise<DashboardData> => {
 
 export const getTransactions = async (): Promise<Transaction[]> => {
     const response = await api.get('/transactions');
-    return response.data;
+    return response.data || [];
 };
 
 export const createTransaction = async (data: Omit<Transaction, 'id'>) => {
@@ -72,7 +110,7 @@ export interface Goal {
 
 export const getGoals = async (): Promise<Goal[]> => {
     const response = await api.get('/goals');
-    return response.data;
+    return response.data || [];
 };
 
 export const createGoal = async (data: Omit<Goal, 'id'>) => {
@@ -147,5 +185,17 @@ export const deleteBudgetCategory = async (id: string) => {
     const response = await api.delete(`/budget/category/${id}`);
     return response.data;
 };
+
+export const register = async (data: any) => {
+    const response = await api.post('/auth/register', data);
+    return response.data;
+};
+
+export const login = async (data: any) => {
+    const response = await api.post('/auth/login', data);
+    return response.data;
+};
+
+
 
 export default api;

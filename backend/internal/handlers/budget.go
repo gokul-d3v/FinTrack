@@ -17,21 +17,19 @@ import (
 
 // GetBudgetOverview returns the budget summary and category breakdown
 func GetBudgetOverview(c *gin.Context) {
-	var user models.User
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	// Find the default user (temporary for MVP)
-	err := db.Client.Database("fintrack").Collection("users").FindOne(ctx, bson.M{}).Decode(&user)
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	userID := user.ID
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
 
 	// 1. Get all Budget Categories for this user
 	var budgets []models.BudgetCategory
-	cursor, err := db.Client.Database("fintrack").Collection("budgets").Find(ctx, bson.M{"user_id": userID})
+	cursor, err := db.Client.Database("fintrack").Collection("budgets").Find(ctx, bson.M{"user_id": userObjectID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch budgets"})
 		return
@@ -55,7 +53,7 @@ func GetBudgetOverview(c *gin.Context) {
 	// 2. Get Transactions for the current month (Expenses only)
 	var transactions []models.Transaction
 	tCursor, err := db.Client.Database("fintrack").Collection("transactions").Find(ctx, bson.M{
-		"user_id": userID,
+		"user_id": userObjectID,
 		"date": bson.M{
 			"$gte": startDate,
 			"$lt":  endDate,
@@ -152,14 +150,18 @@ func CreateBudgetCategory(c *gin.Context) {
 		return
 	}
 
-	// Get user (MVP)
-	var user models.User
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	db.Client.Database("fintrack").Collection("users").FindOne(ctx, bson.M{}).Decode(&user)
 
 	input.ID = primitive.NewObjectID()
-	input.UserID = user.ID
+	input.UserID = userObjectID
 	input.CreatedAt = time.Now()
 	input.UpdatedAt = time.Now()
 
@@ -203,7 +205,15 @@ func UpdateBudgetCategory(c *gin.Context) {
 		},
 	}
 
-	result, err := db.Client.Database("fintrack").Collection("budgets").UpdateOne(ctx, bson.M{"_id": id}, update)
+	// Ensure user owns the budget
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	result, err := db.Client.Database("fintrack").Collection("budgets").UpdateOne(ctx, bson.M{"_id": id, "user_id": userObjectID}, update)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update budget"})
 		return
@@ -229,7 +239,15 @@ func DeleteBudgetCategory(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result, err := db.Client.Database("fintrack").Collection("budgets").DeleteOne(ctx, bson.M{"_id": id})
+	// Ensure user owns the budget
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	result, err := db.Client.Database("fintrack").Collection("budgets").DeleteOne(ctx, bson.M{"_id": id, "user_id": userObjectID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete budget"})
 		return

@@ -13,6 +13,8 @@ export default {
         sans: ["Inter", "sans-serif"],
       },
       colors: {
+        "brand-blue": "#3b82f6",
+        "soft-blue": "#eff6ff",
         "background-light": "#f8fafc",
         "background-dark": "#0f172a",
         "card-light": "#ffffff",

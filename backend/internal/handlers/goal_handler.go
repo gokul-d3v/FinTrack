@@ -17,9 +17,16 @@ func GetGoals(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
 	collection := db.Client.Database("fintrack").Collection("goals")
 
-	cursor, err := collection.Find(ctx, bson.M{})
+	cursor, err := collection.Find(ctx, bson.M{"user_id": userObjectID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch goals"})
 		return
@@ -42,7 +49,15 @@ func CreateGoal(c *gin.Context) {
 		return
 	}
 
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
 	goal.ID = primitive.NewObjectID()
+	goal.UserID = userObjectID
 	goal.CreatedAt = time.Now()
 
 	// Default values if missing
@@ -92,7 +107,15 @@ func UpdateGoal(c *gin.Context) {
 		"$set": bson.M{"current_amount": updateData.CurrentAmount},
 	}
 
-	_, err = collection.UpdateOne(ctx, bson.M{"_id": id}, update)
+	// Ensure user owns goal
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
+	_, err = collection.UpdateOne(ctx, bson.M{"_id": id, "user_id": userObjectID}, update)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update goal"})
 		return
@@ -113,8 +136,16 @@ func DeleteGoal(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// Ensure user owns goal
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
 	collection := db.Client.Database("fintrack").Collection("goals")
-	_, err = collection.DeleteOne(ctx, bson.M{"_id": id})
+	_, err = collection.DeleteOne(ctx, bson.M{"_id": id, "user_id": userObjectID})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete goal"})
 		return

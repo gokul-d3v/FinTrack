@@ -2,6 +2,7 @@ package routes
 
 import (
 	"fintrack-backend/internal/handlers"
+	"fintrack-backend/internal/middleware"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -19,25 +20,32 @@ func SetupRoutes(r *gin.Engine) {
 			auth.POST("/register", handlers.Register)
 			auth.POST("/login", handlers.Login)
 			auth.GET("/google", handlers.GoogleLogin)
+			auth.GET("/google/callback", handlers.GoogleCallback)
 			auth.GET("/apple", handlers.AppleLogin)
 		}
 
-		// Dashboard & Transactions
-		api.GET("/dashboard", handlers.GetDashboardData)
-		api.GET("/transactions", handlers.GetTransactions)
-		api.POST("/transactions", handlers.CreateTransaction)
-		api.GET("/seed", handlers.SeedData)
+		// Protected Routes
+		protected := r.Group("/api")
+		protected.Use(middleware.AuthMiddleware())
+		{
+			// Dashboard & Transactions
+			protected.GET("/dashboard", handlers.GetDashboardData)
+			protected.GET("/transactions", handlers.GetTransactions)
+			protected.POST("/transactions", handlers.CreateTransaction)
 
-		// Budget
-		api.GET("/budget", handlers.GetBudgetOverview)
-		api.POST("/budget/category", handlers.CreateBudgetCategory)
-		api.PUT("/budget/category/:id", handlers.UpdateBudgetCategory)
-		api.DELETE("/budget/category/:id", handlers.DeleteBudgetCategory)
+			// Budget
+			protected.GET("/budget", handlers.GetBudgetOverview)
+			protected.POST("/budget/category", handlers.CreateBudgetCategory)
+			protected.PUT("/budget/category/:id", handlers.UpdateBudgetCategory)
+			protected.DELETE("/budget/category/:id", handlers.DeleteBudgetCategory)
 
-		// Goals
-		api.GET("/goals", handlers.GetGoals)
-		api.POST("/goals", handlers.CreateGoal)
-		api.PUT("/goals/:id", handlers.UpdateGoal)
-		api.DELETE("/goals/:id", handlers.DeleteGoal)
+			// Goals
+			protected.GET("/goals", handlers.GetGoals)
+			protected.POST("/goals", handlers.CreateGoal)
+			protected.PUT("/goals/:id", handlers.UpdateGoal)
+			protected.DELETE("/goals/:id", handlers.DeleteGoal)
+		}
+
+		api.GET("/seed", handlers.SeedData) // Keep seed public for now or protect it too
 	}
 }

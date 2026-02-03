@@ -125,7 +125,7 @@ export default function BudgetPage() {
                 {/* Categories List */}
                 {loading ? (
                     <div className="col-span-3 text-center p-12 text-slate-500">Loading budgets...</div>
-                ) : budgetData?.categories.map((cat) => (
+                ) : (budgetData?.categories || []).map((cat) => (
                     <div key={cat.id} className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow group">
                         <div className="flex justify-between items-start mb-4">
                             <div className="flex items-center gap-3">

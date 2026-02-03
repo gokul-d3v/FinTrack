@@ -19,10 +19,18 @@ func GetDashboardData(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
 	collection := db.Client.Database("fintrack").Collection("transactions")
 
 	// 1. Calculate Overall Stats (Balance, Income, Expense)
 	statsPipeline := mongo.Pipeline{
+		{{Key: "$match", Value: bson.D{{Key: "user_id", Value: userObjectID}}}},
 		{{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: nil},
 			{Key: "totalBalance", Value: bson.D{{Key: "$sum", Value: "$amount"}}},
@@ -55,7 +63,7 @@ func GetDashboardData(c *gin.Context) {
 	findOptions.SetSort(bson.D{{Key: "date", Value: -1}})
 	findOptions.SetLimit(5)
 
-	cursor, err = collection.Find(ctx, bson.M{}, findOptions)
+	cursor, err = collection.Find(ctx, bson.M{"user_id": userObjectID}, findOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transactions"})
 		return
@@ -70,7 +78,10 @@ func GetDashboardData(c *gin.Context) {
 	// 3. Monthly Stats (Last 6 Months)
 	sixMonthsAgo := time.Now().AddDate(0, -6, 0)
 	monthlyPipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.D{{Key: "date", Value: bson.D{{Key: "$gte", Value: sixMonthsAgo}}}}}},
+		{{Key: "$match", Value: bson.D{
+			{Key: "user_id", Value: userObjectID},
+			{Key: "date", Value: bson.D{{Key: "$gte", Value: sixMonthsAgo}}},
+		}}},
 		{{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: bson.D{
 				{Key: "year", Value: bson.D{{Key: "$year", Value: "$date"}}},
@@ -88,7 +99,10 @@ func GetDashboardData(c *gin.Context) {
 
 	// 4. Category Stats (Expenses only)
 	categoryPipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.D{{Key: "amount", Value: bson.D{{Key: "$lt", Value: 0}}}}}},
+		{{Key: "$match", Value: bson.D{
+			{Key: "user_id", Value: userObjectID},
+			{Key: "amount", Value: bson.D{{Key: "$lt", Value: 0}}},
+		}}},
 		{{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: "$category"},
 			{Key: "value", Value: bson.D{{Key: "$sum", Value: "$amount"}}},
@@ -103,7 +117,10 @@ func GetDashboardData(c *gin.Context) {
 	// 5. Daily Stats (Last 7 Days)
 	sevenDaysAgo := time.Now().AddDate(0, 0, -7)
 	dailyPipeline := mongo.Pipeline{
-		{{Key: "$match", Value: bson.D{{Key: "date", Value: bson.D{{Key: "$gte", Value: sevenDaysAgo}}}}}},
+		{{Key: "$match", Value: bson.D{
+			{Key: "user_id", Value: userObjectID},
+			{Key: "date", Value: bson.D{{Key: "$gte", Value: sevenDaysAgo}}},
+		}}},
 		{{Key: "$group", Value: bson.D{
 			{Key: "_id", Value: bson.D{
 				{Key: "year", Value: bson.D{{Key: "$year", Value: "$date"}}},
@@ -138,6 +155,14 @@ func CreateTransaction(c *gin.Context) {
 	}
 
 	transaction.ID = primitive.NewObjectID()
+	// Set UserID from context
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	transaction.UserID, _ = primitive.ObjectIDFromHex(userID.(string))
+
 	if transaction.Date.IsZero() {
 		transaction.Date = time.Now()
 	}
@@ -172,10 +197,17 @@ func GetTransactions(c *gin.Context) {
 
 	collection := db.Client.Database("fintrack").Collection("transactions")
 
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		return
+	}
+	userObjectID, _ := primitive.ObjectIDFromHex(userID.(string))
+
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{Key: "date", Value: -1}})
 
-	cursor, err := collection.Find(ctx, bson.M{}, findOptions)
+	cursor, err := collection.Find(ctx, bson.M{"user_id": userObjectID}, findOptions)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transactions"})
 		return
